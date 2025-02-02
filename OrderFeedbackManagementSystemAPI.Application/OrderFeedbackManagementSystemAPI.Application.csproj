@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\OrderFeedbackManagementSystemAPI.Domain\OrderFeedbackManagementSystemAPI.Domain.csproj" />
+  </ItemGroup>
+
 </Project>
