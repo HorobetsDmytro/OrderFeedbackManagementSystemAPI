@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using OrderFeedbackManagementSystemAPI.Application.Interfaces;
 using OrderFeedbackManagementSystemAPI.Domain.Entities;
 using OrderFeedbackManagementSystemAPI.Domain.Enums;
+using OrderFeedbackManagementSystemAPI.Models.Requests;
 
 namespace OrderFeedbackManagementSystemAPI.Controllers
 {
@@ -20,11 +21,18 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<Order>> CreateOrder([FromBody] List<OrderItem> items)
+        public async Task<ActionResult<Order>> CreateOrder([FromBody] List<CreateOrderItem> orderItems)
         {
             try
             {
                 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+
+                var items = orderItems.Select(item => new OrderItem
+                {
+                    ProductId = item.ProductId,
+                    Quantity = item.Quantity
+                }).ToList();
+
                 var order = await _orderService.CreateOrderAsync(userId, items);
                 return CreatedAtAction(nameof(GetOrder), new { id = order.Id }, order);
             }

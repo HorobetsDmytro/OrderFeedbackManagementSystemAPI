@@ -25,7 +25,6 @@ namespace OrderFeedbackManagementSystemAPI.Infrastructure.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // User configuration
             modelBuilder.Entity<User>()
                 .Property(u => u.Email)
                 .IsRequired()
@@ -45,7 +44,6 @@ namespace OrderFeedbackManagementSystemAPI.Infrastructure.Data
                 .IsRequired()
                 .HasMaxLength(20);
 
-            // Product configuration
             modelBuilder.Entity<Product>()
                 .Property(p => p.Name)
                 .IsRequired()
@@ -55,7 +53,6 @@ namespace OrderFeedbackManagementSystemAPI.Infrastructure.Data
                 .Property(p => p.Price)
                 .HasPrecision(18, 2);
 
-            // Order configuration
             modelBuilder.Entity<Order>()
                 .Property(o => o.OrderNumber)
                 .IsRequired()
@@ -71,7 +68,6 @@ namespace OrderFeedbackManagementSystemAPI.Infrastructure.Data
                 .HasForeignKey(o => o.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // OrderItem configuration
             modelBuilder.Entity<OrderItem>()
                 .Property(oi => oi.UnitPrice)
                 .HasPrecision(18, 2);
@@ -82,7 +78,6 @@ namespace OrderFeedbackManagementSystemAPI.Infrastructure.Data
                 .HasForeignKey(oi => oi.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Review configuration
             modelBuilder.Entity<Review>()
                 .HasOne(r => r.User)
                 .WithMany()

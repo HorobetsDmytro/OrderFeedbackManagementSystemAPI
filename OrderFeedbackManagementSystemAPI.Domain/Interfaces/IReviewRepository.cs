@@ -12,5 +12,6 @@ namespace OrderFeedbackManagementSystemAPI.Domain.Interfaces
         Task<IEnumerable<Review>> GetOrderReviewsAsync(int orderId);
         Task<IEnumerable<Review>> GetFilteredReviewsAsync(int rating);
         Task<double> GetProductAverageRatingAsync(int productId);
+        Task<Review> GetReviewByOrderIdAsync(int orderId);
     }
 }

@@ -15,15 +15,18 @@ namespace OrderFeedbackManagementSystemAPI.Application.Services
         private readonly IOrderRepository _orderRepository;
         private readonly IProductRepository _productRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IReviewService _reviewService;
 
         public OrderService(
             IOrderRepository orderRepository,
             IProductRepository productRepository,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            IReviewService reviewService)
         {
             _orderRepository = orderRepository;
             _productRepository = productRepository;
             _userRepository = userRepository;
+            _reviewService = reviewService;
         }
 
         public async Task<Order> CreateOrderAsync(int userId, List<OrderItem> items)
@@ -79,8 +82,16 @@ namespace OrderFeedbackManagementSystemAPI.Application.Services
             if (order == null)
                 throw new ArgumentException("Order not found");
 
+            var oldStatus = order.Status;
+
             order.Status = newStatus;
             await _orderRepository.UpdateAsync(order);
+
+            if (oldStatus != newStatus)
+            {
+                await _reviewService.HandleOrderStatusChangeAsync(orderId, newStatus);
+            }
+
             return order;
         }
 

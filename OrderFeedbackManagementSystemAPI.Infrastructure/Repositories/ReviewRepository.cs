@@ -23,6 +23,13 @@ namespace OrderFeedbackManagementSystemAPI.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<Review> GetReviewByOrderIdAsync(int orderId)
+        {
+            return await _context.Reviews
+                .Include(r => r.User)
+                .FirstOrDefaultAsync(r => r.OrderId == orderId);
+        }
+
         public async Task<IEnumerable<Review>> GetFilteredReviewsAsync(int rating)
         {
             return await _context.Reviews
@@ -32,9 +39,16 @@ namespace OrderFeedbackManagementSystemAPI.Infrastructure.Repositories
 
         public async Task<double> GetProductAverageRatingAsync(int productId)
         {
-            return await _context.Reviews
+            var reviews = await _context.Reviews
+                .Include(r => r.Order)
+                .ThenInclude(o => o.OrderItems)
                 .Where(r => r.Order.OrderItems.Any(oi => oi.ProductId == productId))
-                .AverageAsync(r => r.Rating);
+                .ToListAsync();
+
+            if (!reviews.Any())
+                return 0;
+
+            return reviews.Average(r => r.Rating);
         }
     }
 }

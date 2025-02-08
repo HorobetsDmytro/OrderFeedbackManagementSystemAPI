@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using OrderFeedbackManagementSystemAPI.Domain.Entities;
+using OrderFeedbackManagementSystemAPI.Domain.Enums;
 
 namespace OrderFeedbackManagementSystemAPI.Application.Interfaces
 {
@@ -14,5 +15,7 @@ namespace OrderFeedbackManagementSystemAPI.Application.Interfaces
         Task<IEnumerable<Review>> GetOrderReviewsAsync(int orderId);
         Task<IEnumerable<Review>> GetFilteredReviewsAsync(int rating);
         Task<double> GetProductAverageRatingAsync(int productId);
+        Task<Review> HandleOrderStatusChangeAsync(int orderId, OrderStatus newStatus);
+
     }
 }

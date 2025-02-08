@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace OrderFeedbackManagementSystemAPI.Domain.Entities
@@ -12,6 +13,7 @@ namespace OrderFeedbackManagementSystemAPI.Domain.Entities
         public int UserId { get; set; }
         public User User { get; set; }
         public int OrderId { get; set; }
+        [JsonIgnore]
         public Order Order { get; set; }
         public int Rating { get; set; }
         public string Comment { get; set; }

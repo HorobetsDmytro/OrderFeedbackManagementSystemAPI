@@ -89,5 +89,16 @@ namespace OrderFeedbackManagementSystemAPI.Application.Services
         {
             return await _reviewRepository.GetProductAverageRatingAsync(productId);
         }
+
+        public async Task<Review> HandleOrderStatusChangeAsync(int orderId, OrderStatus newStatus)
+        {
+            var review = await _reviewRepository.GetReviewByOrderIdAsync(orderId);
+            if (review != null && newStatus != OrderStatus.Delivered)
+            {
+                await _reviewRepository.DeleteAsync(review);
+                return null;
+            }
+            return review;
+        }
     }
 }
