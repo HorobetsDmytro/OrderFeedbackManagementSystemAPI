@@ -20,7 +20,18 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
             _orderService = orderService;
         }
 
+        /// <summary>
+        /// Створення нового замовлення
+        /// </summary>
+        /// <param name="orderItems">Список товарів для замовлення</param>
+        /// <returns>Створене замовлення</returns>
+        /// <response code="201">Замовлення успішно створено</response>
+        /// <response code="400">Помилка валідації або недостатньо товару на складі</response>
+        /// <response code="401">Користувач не авторизований</response>
         [HttpPost]
+        [ProducesResponseType(typeof(Order), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<Order>> CreateOrder([FromBody] List<CreateOrderItem> orderItems)
         {
             try
@@ -46,7 +57,20 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Отримання інформації про конкретне замовлення
+        /// </summary>
+        /// <param name="id">Ідентифікатор замовлення</param>
+        /// <returns>Інформація про замовлення</returns>
+        /// <response code="200">Замовлення знайдено</response>
+        /// <response code="401">Користувач не авторизований</response>
+        /// <response code="403">Доступ заборонено</response>
+        /// <response code="404">Замовлення не знайдено</response>
         [HttpGet("{id}")]
+        [ProducesResponseType(typeof(Order), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Order>> GetOrder(int id)
         {
             var order = await _orderService.GetOrderByIdAsync(id);
@@ -60,7 +84,15 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
             return Ok(order);
         }
 
+        /// <summary>
+        /// Отримання всіх замовлень користувача
+        /// </summary>
+        /// <returns>Список замовлень користувача</returns>
+        /// <response code="200">Список замовлень</response>
+        /// <response code="401">Користувач не авторизований</response>
         [HttpGet("user")]
+        [ProducesResponseType(typeof(IEnumerable<Order>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<IEnumerable<Order>>> GetUserOrders()
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
@@ -68,8 +100,22 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
             return Ok(orders);
         }
 
+        /// <summary>
+        /// Оновлення статусу замовлення
+        /// </summary>
+        /// <param name="id">Ідентифікатор замовлення</param>
+        /// <param name="newStatus">Новий статус замовлення</param>
+        /// <returns>Оновлене замовлення</returns>
+        /// <response code="200">Статус успішно оновлено</response>
+        /// <response code="401">Користувач не авторизований</response>
+        /// <response code="403">Доступ заборонено</response>
+        /// <response code="404">Замовлення не знайдено</response>
         [HttpPut("{id}/status")]
         [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(Order), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Order>> UpdateOrderStatus(int id, [FromBody] OrderStatus newStatus)
         {
             try

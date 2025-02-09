@@ -8,6 +8,7 @@ using OrderFeedbackManagementSystemAPI.Application.Services;
 using OrderFeedbackManagementSystemAPI.Domain.Interfaces;
 using OrderFeedbackManagementSystemAPI.Infrastructure.Data;
 using OrderFeedbackManagementSystemAPI.Infrastructure.Repositories;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -76,7 +77,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+builder.Services.AddSwaggerGen(c =>
+{
+    c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
+});
 
 var app = builder.Build();
 
