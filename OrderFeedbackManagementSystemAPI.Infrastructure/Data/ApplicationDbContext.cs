@@ -17,6 +17,8 @@ namespace OrderFeedbackManagementSystemAPI.Infrastructure.Data
 
         public DbSet<Product> Products { get; set; }
         public DbSet<User> Users { get; set; }
+        public DbSet<Cart> Carts { get; set; }
+        public DbSet<CartItem> CartItems { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<Review> Reviews { get; set; }
@@ -89,6 +91,32 @@ namespace OrderFeedbackManagementSystemAPI.Infrastructure.Data
                 .WithOne(o => o.Review)
                 .HasForeignKey<Review>(r => r.OrderId)
                 .OnDelete(DeleteBehavior.Restrict);
+            
+            modelBuilder.Entity<CartItem>()
+                .Property(ci => ci.Price)
+                .HasColumnType("decimal(18,2)");
+            
+            modelBuilder.Entity<CartItem>()
+                .HasOne(ci => ci.Product)
+                .WithMany()
+                .HasForeignKey(ci => ci.ProductId);
+            
+             modelBuilder.Entity<Cart>()
+                 .HasOne(c => c.User)
+                 .WithMany()
+                 .HasForeignKey(c => c.UserId);
+             
+             modelBuilder.Entity<CartItem>()
+                 .HasOne(ci => ci.Product)
+                 .WithMany()
+                 .HasForeignKey(ci => ci.ProductId)
+                 .OnDelete(DeleteBehavior.Restrict);
+
+             modelBuilder.Entity<Cart>()
+                 .HasMany(c => c.Items)
+                 .WithOne()
+                 .HasForeignKey(ci => ci.CartId)
+                 .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

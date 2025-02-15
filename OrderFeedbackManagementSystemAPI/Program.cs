@@ -9,6 +9,7 @@ using OrderFeedbackManagementSystemAPI.Domain.Interfaces;
 using OrderFeedbackManagementSystemAPI.Infrastructure.Data;
 using OrderFeedbackManagementSystemAPI.Infrastructure.Repositories;
 using System.Reflection;
+using OrderFeedbackManagementSystemAPI.Domain.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,7 +23,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "API для управління замовленнями та відгуками", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "API РґР»СЏ СѓРїСЂР°РІР»С–РЅРЅСЏ Р·Р°РјРѕРІР»РµРЅРЅСЏРјРё С‚Р° РІС–РґРіСѓРєР°РјРё", Version = "v1" });
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -53,10 +54,12 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ICartRepository, CartRepository>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
