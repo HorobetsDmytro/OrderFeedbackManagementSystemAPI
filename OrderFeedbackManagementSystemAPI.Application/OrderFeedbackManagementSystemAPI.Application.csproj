@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\OrderFeedbackManagementSystemAPI.Domain\OrderFeedbackManagementSystemAPI.Domain.csproj" />
+    <ProjectReference Include="..\OrderFeedbackManagementSystemAPI.Infrastructure\OrderFeedbackManagementSystemAPI.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

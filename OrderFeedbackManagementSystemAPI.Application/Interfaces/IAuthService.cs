@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using OrderFeedbackManagementSystemAPI.Domain.Entities;
 
 namespace OrderFeedbackManagementSystemAPI.Application.Interfaces
 {
@@ -11,6 +12,7 @@ namespace OrderFeedbackManagementSystemAPI.Application.Interfaces
     {
         Task<AuthResponse> RegisterAsync(RegisterRequest request);
         Task<AuthResponse> LoginAsync(LoginRequest request);
+        Task<User> GetCurrentUserAsync();
     }
 
     public class RegisterRequest
@@ -40,6 +42,7 @@ namespace OrderFeedbackManagementSystemAPI.Application.Interfaces
 
     public class AuthResponse
     {
+        public int Id { get; set; }
         public string Token { get; set; }
         public string Username { get; set; }
         public string Email { get; set; }

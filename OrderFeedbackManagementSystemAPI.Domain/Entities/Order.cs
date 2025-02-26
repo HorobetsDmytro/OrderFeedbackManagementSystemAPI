@@ -17,6 +17,6 @@ namespace OrderFeedbackManagementSystemAPI.Domain.Entities
         public decimal TotalAmount { get; set; }
         public DateTime CreatedAt { get; set; }
         public List<OrderItem> OrderItems { get; set; }
-        public Review Review { get; set; }
+        public ICollection<Review> Reviews { get; set; } = new List<Review>();
     }
 }

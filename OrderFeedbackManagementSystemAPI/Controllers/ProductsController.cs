@@ -1,7 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using OrderFeedbackManagementSystemAPI.Application.Interfaces;
 using OrderFeedbackManagementSystemAPI.Domain.Entities;
+using OrderFeedbackManagementSystemAPI.Domain.Interfaces;
+using OrderFeedbackManagementSystemAPI.Infrastructure.Data;
 using OrderFeedbackManagementSystemAPI.Models.Requests;
 
 namespace OrderFeedbackManagementSystemAPI.Controllers
@@ -10,11 +13,18 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
     [Route("api/[controller]")]
     public class ProductsController : ControllerBase
     {
+        protected readonly ApplicationDbContext _context;
         private readonly IProductService _productService;
+        private readonly IProductRepository _productRepository;
 
-        public ProductsController(IProductService productService)
+        private readonly IWebHostEnvironment _environment;
+
+        public ProductsController(IProductService productService, ApplicationDbContext context, IWebHostEnvironment environment, IProductRepository productRepository)
         {
             _productService = productService;
+            _context = context;
+            _environment = environment;
+            _productRepository = productRepository;
         }
 
         /// <summary>
@@ -24,10 +34,66 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
         /// <response code="200">Список товарів успішно отримано</response>
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<Product>), StatusCodes.Status200OK)]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
+        public async Task<ActionResult> GetProducts(
+            [FromQuery] string search = "",
+            [FromQuery] decimal? minPrice = null,
+            [FromQuery] decimal? maxPrice = null,
+            [FromQuery] string sortBy = "name",
+            [FromQuery] string sortOrder = "asc",
+            [FromQuery] int page = 1,
+            [FromQuery] int limit = 100,
+            [FromQuery] bool getAll = false)
         {
-            var products = await _productService.GetAllProductsAsync();
-            return Ok(products);
+            try
+            {
+                var query = _context.Products.AsQueryable();
+
+                // Фільтрація
+                if (!string.IsNullOrEmpty(search))
+                {
+                    query = query.Where(p => p.Name.Contains(search) || p.Description.Contains(search));
+                }
+                if (minPrice.HasValue)
+                {
+                    query = query.Where(p => p.Price >= minPrice.Value);
+                }
+                if (maxPrice.HasValue)
+                {
+                    query = query.Where(p => p.Price <= maxPrice.Value);
+                }
+
+                // Сортування
+                query = sortBy.ToLower() switch
+                {
+                    "name" => sortOrder.ToLower() == "asc"
+                        ? query.OrderBy(p => p.Name)
+                        : query.OrderByDescending(p => p.Name),
+                    "price" => sortOrder.ToLower() == "asc"
+                        ? query.OrderBy(p => p.Price)
+                        : query.OrderByDescending(p => p.Price),
+                    _ => query.OrderBy(p => p.Name)
+                };
+
+                // Повернення всіх товарів або з пагінацією
+                if (getAll)
+                {
+                    var items = await query.ToListAsync();
+                    return Ok(new { items });
+                }
+                else
+                {
+                    var totalCount = await query.CountAsync();
+                    var items = await query
+                        .Skip((page - 1) * limit)
+                        .Take(limit)
+                        .ToListAsync();
+                    return Ok(new { items, totalCount });
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -68,16 +134,45 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<ActionResult<Product>> CreateProduct([FromBody] Product product)
+        public async Task<IActionResult> CreateProduct([FromForm] ProductRequest request)
         {
             try
             {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                var product = new Product
+                {
+                    Name = request.Name,
+                    Description = request.Description,
+                    Price = request.Price,
+                    Stock = request.Stock
+                };
+
+                if (request.Image != null)
+                {
+                    string uploadsFolder = Path.Combine(_environment.WebRootPath, "images", "products");
+                    string uniqueFileName = Guid.NewGuid().ToString() + "_" + request.Image.FileName;
+                    string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                    Directory.CreateDirectory(uploadsFolder);
+
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await request.Image.CopyToAsync(fileStream);
+                    }
+
+                    product.ImagePath = $"/images/products/{uniqueFileName}";
+                }
+
                 var createdProduct = await _productService.CreateProductAsync(product);
                 return CreatedAtAction(nameof(GetProduct), new { id = createdProduct.Id }, createdProduct);
             }
-            catch (ArgumentException ex)
+            catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
 
@@ -97,17 +192,60 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<Product>> UpdateProduct(int id, [FromBody] Product product)
+        public async Task<ActionResult<Product>> UpdateProduct(int id, [FromForm] ProductUpdateRequest request)
         {
             try
             {
-                var updatedProduct = await _productService.UpdateProductAsync(id, product);
-                return Ok(updatedProduct);
+                var product = await _productRepository.GetByIdAsync(id);
+                if (product == null)
+                    return NotFound();
+
+                product.Name = request.Name;
+                product.Description = request.Description;
+                product.Price = decimal.Parse(request.Price);
+                product.Stock = int.Parse(request.Stock);
+
+                if (request.Image != null)
+                {
+                    var uploadsFolder = Path.Combine(_environment.WebRootPath, "images", "products");
+                    Directory.CreateDirectory(uploadsFolder);
+
+                    if (!string.IsNullOrEmpty(product.ImagePath))
+                    {
+                        var oldImagePath = Path.Combine(_environment.WebRootPath, product.ImagePath.TrimStart('/'));
+                        if (System.IO.File.Exists(oldImagePath))
+                        {
+                            System.IO.File.Delete(oldImagePath);
+                        }
+                    }
+
+                    var uniqueFileName = Guid.NewGuid().ToString() + "_" + request.Image.FileName;
+                    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await request.Image.CopyToAsync(fileStream);
+                    }
+
+                    product.ImagePath = "/images/products/" + uniqueFileName;
+                }
+
+                await _productRepository.UpdateAsync(product);
+                return Ok(product);
             }
-            catch (ArgumentException ex)
+            catch (Exception ex)
             {
-                return NotFound(ex.Message);
+                return StatusCode(500, new { message = ex.Message });
             }
+        }
+        
+        public class ProductUpdateRequest
+        {
+            public string Name { get; set; }
+            public string Description { get; set; }
+            public string Price { get; set; }
+            public string Stock { get; set; }
+            public IFormFile? Image { get; set; }
         }
 
         /// <summary>

@@ -10,6 +10,7 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class CartController : ControllerBase
     {
         private readonly ICartService _cartService;
@@ -27,7 +28,6 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
         /// <param name="request">Запит на додавання товару</param>
         /// <returns>Повідомлення про успішне додавання</returns>
         [HttpPost("items")]
-        [Authorize]
         [SwaggerOperation(Summary = "Додає товар в кошик", Description = "Цей метод дозволяє користувачу додавати товар в кошик.")]
         [SwaggerResponse(200, "Товар успішно додано в кошик")]
         [SwaggerResponse(400, "Помилка при додаванні товару в кошик")]
@@ -61,7 +61,6 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
         /// </summary>
         /// <returns>Кошик користувача</returns>
         [HttpGet]
-        [Authorize]
         [SwaggerOperation(Summary = "Отримує кошик користувача", Description = "Цей метод повертає всі товари, які є в кошику користувача.")]
         [SwaggerResponse(200, "Кошик успішно отримано")]
         public async Task<ActionResult<Cart>> GetCart()
@@ -78,7 +77,6 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
         /// <param name="request">Запит з новою кількістю товару</param>
         /// <returns>Оновлений кошик</returns>
         [HttpPut("items/{productId}")]
-        [Authorize]
         [SwaggerOperation(Summary = "Оновлює кількість товару в кошику", Description = "Цей метод дозволяє змінити кількість товару в кошику.")]
         [SwaggerResponse(200, "Кількість товару в кошику оновлено")]
         [SwaggerResponse(400, "Невірне значення кількості товару")]
@@ -102,7 +100,6 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
         /// <param name="productId">Ідентифікатор товару</param>
         /// <returns>Статус видалення товару</returns>
         [HttpDelete("items/{productId}")]
-        [Authorize]
         [SwaggerOperation(Summary = "Видаляє товар з кошика", Description = "Цей метод дозволяє користувачу видалити товар з кошика.")]
         [SwaggerResponse(200, "Товар успішно видалено з кошика")]
         [SwaggerResponse(400, "Помилка при видаленні товару з кошика")]
@@ -111,6 +108,14 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
             await _cartService.RemoveFromCartAsync(userId, productId);
             return Ok();
+        }
+        
+        [HttpDelete("clear")]
+        public async Task<IActionResult> ClearCart()
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            await _cartService.ClearCartAsync(userId);
+            return Ok(new { message = "Кошик успішно очищено." });
         }
     }
 }

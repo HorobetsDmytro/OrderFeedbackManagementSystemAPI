@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using OrderFeedbackManagementSystemAPI.Application.Interfaces;
@@ -17,11 +18,13 @@ namespace OrderFeedbackManagementSystemAPI.Application.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IConfiguration _configuration;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public AuthService(IUserRepository userRepository, IConfiguration configuration)
+        public AuthService(IUserRepository userRepository, IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
         {
             _userRepository = userRepository;
             _configuration = configuration;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
@@ -39,13 +42,14 @@ namespace OrderFeedbackManagementSystemAPI.Application.Services
                 Email = request.Email,
                 Username = request.Username,
                 Password = HashPassword(request.Password),
-                Role = "User" // За замовчуванням роль User
+                Role = "User"
             };
 
             await _userRepository.AddAsync(user);
 
             return new AuthResponse
             {
+                Id = user.Id,
                 Token = GenerateJwtToken(user),
                 Username = user.Username,
                 Email = user.Email,
@@ -85,14 +89,13 @@ namespace OrderFeedbackManagementSystemAPI.Application.Services
         {
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
             var claims = new[]
             {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Name, user.Username),
-            new Claim(ClaimTypes.Role, user.Role)
-        };
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.Role, user.Role)
+            };
 
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
@@ -103,6 +106,21 @@ namespace OrderFeedbackManagementSystemAPI.Application.Services
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        public async Task<User> GetCurrentUserAsync()
+        {
+            var userIdClaim = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim))
+                throw new UnauthorizedAccessException("User is not authenticated");
+
+            var userId = int.Parse(userIdClaim);
+
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+                throw new UnauthorizedAccessException("User not found");
+
+            return user;
         }
     }
 }

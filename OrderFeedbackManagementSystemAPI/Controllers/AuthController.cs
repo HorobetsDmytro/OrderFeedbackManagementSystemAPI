@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OrderFeedbackManagementSystemAPI.Application.Interfaces;
 
 namespace OrderFeedbackManagementSystemAPI.Controllers
@@ -57,6 +59,27 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
             catch (UnauthorizedAccessException)
             {
                 return Unauthorized("Invalid credentials");
+            }
+        }
+        
+        [HttpGet("current")]
+        [Authorize]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            try
+            {
+                var user = await _authService.GetCurrentUserAsync();
+                return Ok(new
+                {
+                    id = user.Id,
+                    username = user.Username,
+                    email = user.Email,
+                    role = user.Role
+                });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
             }
         }
     }

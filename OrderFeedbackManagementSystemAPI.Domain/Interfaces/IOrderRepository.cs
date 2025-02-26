@@ -9,7 +9,7 @@ namespace OrderFeedbackManagementSystemAPI.Domain.Interfaces
 {
     public interface IOrderRepository : IGenericRepository<Order>
     {
-        Task<IEnumerable<Order>> GetUserOrdersAsync(int userId);
+        Task<List<Order>> GetUserOrdersAsync(int userId);
         Task<Order> GetOrderWithDetailsAsync(int orderId);
     }
 }

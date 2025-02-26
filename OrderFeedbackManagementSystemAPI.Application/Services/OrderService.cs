@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using OrderFeedbackManagementSystemAPI.Application.Interfaces;
 using OrderFeedbackManagementSystemAPI.Domain.Entities;
 using OrderFeedbackManagementSystemAPI.Domain.Enums;
 using OrderFeedbackManagementSystemAPI.Domain.Interfaces;
+using OrderFeedbackManagementSystemAPI.Infrastructure.Data;
 
 namespace OrderFeedbackManagementSystemAPI.Application.Services
 {
@@ -16,17 +18,20 @@ namespace OrderFeedbackManagementSystemAPI.Application.Services
         private readonly IProductRepository _productRepository;
         private readonly IUserRepository _userRepository;
         private readonly IReviewService _reviewService;
+        private readonly ApplicationDbContext _dbContext;
 
         public OrderService(
             IOrderRepository orderRepository,
             IProductRepository productRepository,
             IUserRepository userRepository,
-            IReviewService reviewService)
+            IReviewService reviewService, 
+            ApplicationDbContext dbContext)
         {
             _orderRepository = orderRepository;
             _productRepository = productRepository;
             _userRepository = userRepository;
             _reviewService = reviewService;
+            _dbContext = dbContext;
         }
 
         public async Task<Order> CreateOrderAsync(int userId, List<OrderItem> items)
@@ -76,22 +81,16 @@ namespace OrderFeedbackManagementSystemAPI.Application.Services
             return await _orderRepository.GetUserOrdersAsync(userId);
         }
 
-        public async Task<Order> UpdateOrderStatusAsync(int orderId, OrderStatus newStatus)
+        public async Task<Order> UpdateOrderStatusAsync(int id, OrderStatus newStatus)
         {
-            var order = await _orderRepository.GetByIdAsync(orderId);
+            var order = await _dbContext.Orders.FindAsync(id);
             if (order == null)
-                throw new ArgumentException("Order not found");
-
-            var oldStatus = order.Status;
-
-            order.Status = newStatus;
-            await _orderRepository.UpdateAsync(order);
-
-            if (oldStatus != newStatus)
             {
-                await _reviewService.HandleOrderStatusChangeAsync(orderId, newStatus);
+                throw new ArgumentException("Order not found");
             }
 
+            order.Status = newStatus;
+            await _dbContext.SaveChangesAsync();
             return order;
         }
 
@@ -109,6 +108,13 @@ namespace OrderFeedbackManagementSystemAPI.Application.Services
         private string GenerateOrderNumber()
         {
             return $"ORD-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 8)}";
+        }
+        
+        public async Task<List<Order>> GetAllOrdersAsync()
+        {
+            return await _dbContext.Orders
+                .Include(o => o.User)
+                .ToListAsync();
         }
     }
 }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OrderFeedbackManagementSystemAPI.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using OrderFeedbackManagementSystemAPI.Infrastructure.Data;
 namespace OrderFeedbackManagementSystemAPI.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250224221549_FixReviewModel")]
+    partial class FixReviewModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -200,7 +203,8 @@ namespace OrderFeedbackManagementSystemAPI.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OrderId");
+                    b.HasIndex("OrderId")
+                        .IsUnique();
 
                     b.HasIndex("ProductId");
 
@@ -300,8 +304,8 @@ namespace OrderFeedbackManagementSystemAPI.Infrastructure.Migrations
             modelBuilder.Entity("OrderFeedbackManagementSystemAPI.Domain.Entities.Review", b =>
                 {
                     b.HasOne("OrderFeedbackManagementSystemAPI.Domain.Entities.Order", "Order")
-                        .WithMany("Reviews")
-                        .HasForeignKey("OrderId")
+                        .WithOne("Review")
+                        .HasForeignKey("OrderFeedbackManagementSystemAPI.Domain.Entities.Review", "OrderId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -333,7 +337,8 @@ namespace OrderFeedbackManagementSystemAPI.Infrastructure.Migrations
                 {
                     b.Navigation("OrderItems");
 
-                    b.Navigation("Reviews");
+                    b.Navigation("Review")
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

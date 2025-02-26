@@ -95,11 +95,18 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<IEnumerable<Order>>> GetUserOrders()
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-            var orders = await _orderService.GetUserOrdersAsync(userId);
-            return Ok(orders);
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+                var orders = await _orderService.GetUserOrdersAsync(userId);
+                return Ok(orders);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
-
+    
         /// <summary>
         /// Оновлення статусу замовлення
         /// </summary>
@@ -111,7 +118,7 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
         /// <response code="403">Доступ заборонено</response>
         /// <response code="404">Замовлення не знайдено</response>
         [HttpPut("{id}/status")]
-        [Authorize(Roles = "Admin")]
+        //[Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(Order), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -126,6 +133,21 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
             catch (ArgumentException ex)
             {
                 return NotFound(ex.Message);
+            }
+        }
+        
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAllOrders()
+        {
+            try
+            {
+                var orders = await _orderService.GetAllOrdersAsync();
+                return Ok(orders);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
     }

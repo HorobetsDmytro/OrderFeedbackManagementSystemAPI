@@ -85,12 +85,6 @@ namespace OrderFeedbackManagementSystemAPI.Infrastructure.Data
                 .WithMany()
                 .HasForeignKey(r => r.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<Review>()
-                .HasOne(r => r.Order)
-                .WithOne(o => o.Review)
-                .HasForeignKey<Review>(r => r.OrderId)
-                .OnDelete(DeleteBehavior.Restrict);
             
             modelBuilder.Entity<CartItem>()
                 .Property(ci => ci.Price)
@@ -117,6 +111,12 @@ namespace OrderFeedbackManagementSystemAPI.Infrastructure.Data
                  .WithOne()
                  .HasForeignKey(ci => ci.CartId)
                  .OnDelete(DeleteBehavior.Cascade);
+
+             modelBuilder.Entity<Order>()
+                 .HasMany(o => o.Reviews)
+                 .WithOne(r => r.Order)
+                 .HasForeignKey(r => r.OrderId)
+                 .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

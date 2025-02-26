@@ -9,7 +9,6 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
     public class ReviewsController : ControllerBase
     {
         private readonly IReviewService _reviewService;
@@ -22,7 +21,7 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
         }
 
         /// <summary>
-        /// Створення нового відгуку
+        /// Створення нового відгуку для конкретного товару
         /// </summary>
         /// <param name="request">Дані відгуку</param>
         /// <returns>Створений відгук</returns>
@@ -31,17 +30,31 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
         /// <response code="401">Користувач не авторизований</response>
         /// <response code="403">Доступ заборонено</response>
         [HttpPost]
+        [Authorize]
         [ProducesResponseType(typeof(Review), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<ActionResult<Review>> CreateReview([FromBody] CreateReviewRequest request)
+        public async Task<IActionResult> CreateReview([FromBody] CreateReviewRequest request)
         {
             try
             {
                 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-                var review = await _reviewService.CreateReviewAsync(userId, request.OrderId, request.Rating, request.Comment);
-                return CreatedAtAction(nameof(GetOrderReviews), new { orderId = request.OrderId }, review);
+
+                // Перевірка, чи користувач має замовлення з цим товаром
+                var userOrders = await _orderService.GetUserOrdersAsync(userId);
+                var orderWithProduct = userOrders.FirstOrDefault(order =>
+                    order.OrderItems.Any(item => item.ProductId == request.ProductId)
+                );
+
+                if (orderWithProduct == null)
+                {
+                    return BadRequest("Ви не можете залишити відгук, оскільки не маєте замовлення на цей товар.");
+                }
+
+                // Створення відгуку
+                var review = await _reviewService.CreateReviewAsync(userId, request.OrderId, request.ProductId, request.Rating, request.Comment);
+                return CreatedAtAction(nameof(GetProductReviews), new { productId = request.ProductId }, review);
             }
             catch (ArgumentException ex)
             {
@@ -68,6 +81,7 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
         /// <response code="401">Користувач не авторизований</response>
         /// <response code="404">Відгук не знайдено</response>
         [HttpPut("{id}")]
+        [Authorize]
         [ProducesResponseType(typeof(Review), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -86,19 +100,27 @@ namespace OrderFeedbackManagementSystemAPI.Controllers
         }
 
         /// <summary>
-        /// Отримання всіх відгуків для замовлення
+        /// Отримання всіх відгуків для конкретного товару
         /// </summary>
-        /// <param name="orderId">Ідентифікатор замовлення</param>
+        /// <param name="productId">Ідентифікатор товару</param>
         /// <returns>Список відгуків</returns>
         /// <response code="200">Список відгуків успішно отримано</response>
         /// <response code="401">Користувач не авторизований</response>
-        [HttpGet("order/{orderId}")]
+        [HttpGet("product/{productId}/reviews")]
         [ProducesResponseType(typeof(IEnumerable<Review>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<ActionResult<IEnumerable<Review>>> GetOrderReviews(int orderId)
+        public async Task<ActionResult<IEnumerable<Review>>> GetProductReviews(int productId)
         {
-            var reviews = await _reviewService.GetOrderReviewsAsync(orderId);
-            return Ok(reviews);
+            try
+            {
+                var reviews = await _reviewService.GetProductReviewsAsync(productId);
+                return Ok(reviews);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         /// <summary>

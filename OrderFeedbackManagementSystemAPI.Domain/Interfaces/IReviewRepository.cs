@@ -10,8 +10,10 @@ namespace OrderFeedbackManagementSystemAPI.Domain.Interfaces
     public interface IReviewRepository : IGenericRepository<Review>
     {
         Task<IEnumerable<Review>> GetOrderReviewsAsync(int orderId);
+        Task<IEnumerable<Review>> GetProductReviewsAsync(int productId);
         Task<IEnumerable<Review>> GetFilteredReviewsAsync(int rating);
         Task<double> GetProductAverageRatingAsync(int productId);
         Task<Review> GetReviewByOrderIdAsync(int orderId);
+        Task<Review> GetReviewByOrderAndProductAsync(int orderId, int productId);
     }
 }

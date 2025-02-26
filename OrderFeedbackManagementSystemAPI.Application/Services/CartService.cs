@@ -8,6 +8,7 @@ public class CartService : ICartService
 {
     private readonly ICartRepository _cartRepository;
     private readonly IProductRepository _productRepository;
+    private ICartService _cartServiceImplementation;
 
     public CartService(ICartRepository cartRepository, IProductRepository productRepository)
     {
@@ -93,5 +94,10 @@ public class CartService : ICartService
         await _cartRepository.UpdateAsync(cart);
 
         return cart;
+    }
+
+    public async Task ClearCartAsync(int userId)
+    {
+        await _cartRepository.ClearCartAsync(userId);
     }
 }

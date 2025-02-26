@@ -27,5 +27,10 @@ namespace OrderFeedbackManagementSystemAPI.Infrastructure.Repositories
             return await _context.Users
                 .FirstOrDefaultAsync(u => u.Username == username);
         }
+        
+        public async Task<User> GetByIdAsync(int id)
+        {
+            return await _context.Users.FindAsync(id);
+        }
     }
 }

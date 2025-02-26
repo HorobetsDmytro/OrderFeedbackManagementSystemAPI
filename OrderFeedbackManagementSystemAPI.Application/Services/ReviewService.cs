@@ -26,7 +26,7 @@ namespace OrderFeedbackManagementSystemAPI.Application.Services
             _userRepository = userRepository;
         }
 
-        public async Task<Review> CreateReviewAsync(int userId, int orderId, int rating, string comment)
+        public async Task<Review> CreateReviewAsync(int userId, int orderId, int productId, int rating, string comment)
         {
             var order = await _orderRepository.GetOrderWithDetailsAsync(orderId);
             if (order == null)
@@ -35,11 +35,13 @@ namespace OrderFeedbackManagementSystemAPI.Application.Services
             if (order.UserId != userId)
                 throw new UnauthorizedAccessException("User is not authorized to review this order");
 
-            if (order.Status != OrderStatus.Delivered)
-                throw new InvalidOperationException("Can only review delivered orders");
+            var orderItem = order.OrderItems.FirstOrDefault(item => item.ProductId == productId);
+            if (orderItem == null)
+                throw new ArgumentException("Product is not part of the specified order");
 
-            if (order.Review != null)
-                throw new InvalidOperationException("Order already has a review");
+            var existingReview = order.Reviews?.FirstOrDefault(r => r.ProductId == productId);
+            if (existingReview != null)
+                throw new InvalidOperationException("A review for this product in the order already exists");
 
             if (rating < 1 || rating > 5)
                 throw new ArgumentException("Rating must be between 1 and 5");
@@ -48,6 +50,7 @@ namespace OrderFeedbackManagementSystemAPI.Application.Services
             {
                 UserId = userId,
                 OrderId = orderId,
+                ProductId = productId,
                 Rating = rating,
                 Comment = comment,
                 CreatedAt = DateTime.UtcNow
@@ -99,6 +102,27 @@ namespace OrderFeedbackManagementSystemAPI.Application.Services
                 return null;
             }
             return review;
+        }
+        
+        public async Task<bool> HasUserPurchasedProductAsync(int userId, int productId)
+        {
+            var orders = await _orderRepository.GetUserOrdersAsync(userId);
+            return orders.Any(order =>
+                order.Status == OrderStatus.Delivered &&
+                order.OrderItems.Any(item => item.ProductId == productId)
+            );
+        }
+        
+        public async Task<IEnumerable<Review>> GetProductReviewsAsync(int productId)
+        {
+            // Validate productId (optional, depending on your requirements)
+            if (productId <= 0)
+            {
+                throw new ArgumentException("Invalid productId");
+            }
+
+            // Fetch reviews for the specified product
+            return await _reviewRepository.GetProductReviewsAsync(productId);
         }
     }
 }

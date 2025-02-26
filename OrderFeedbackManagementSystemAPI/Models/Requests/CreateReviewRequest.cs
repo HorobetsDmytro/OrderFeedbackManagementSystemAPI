@@ -6,6 +6,8 @@ namespace OrderFeedbackManagementSystemAPI.Models.Requests
     {
         [Required]
         public int OrderId { get; set; }
+        
+        public int ProductId { get; set; }
 
         [Required]
         [Range(1, 5)]

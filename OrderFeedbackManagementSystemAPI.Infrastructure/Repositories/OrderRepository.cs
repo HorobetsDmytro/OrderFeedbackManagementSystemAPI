@@ -16,7 +16,7 @@ namespace OrderFeedbackManagementSystemAPI.Infrastructure.Repositories
         {
         }
 
-        public async Task<IEnumerable<Order>> GetUserOrdersAsync(int userId)
+        public async Task<List<Order>> GetUserOrdersAsync(int userId)
         {
             return await _context.Orders
                 .Include(o => o.OrderItems)
@@ -30,7 +30,7 @@ namespace OrderFeedbackManagementSystemAPI.Infrastructure.Repositories
             return await _context.Orders
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
-                .Include(o => o.Review)
+                .Include(o => o.Reviews)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
         }
     }

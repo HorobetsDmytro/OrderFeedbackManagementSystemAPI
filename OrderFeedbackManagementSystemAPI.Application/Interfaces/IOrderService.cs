@@ -15,5 +15,6 @@ namespace OrderFeedbackManagementSystemAPI.Application.Interfaces
         Task<IEnumerable<Order>> GetUserOrdersAsync(int userId);
         Task<Order> UpdateOrderStatusAsync(int orderId, OrderStatus newStatus);
         Task<decimal> CalculateOrderTotalAsync(List<OrderItem> items);
+        Task<List<Order>> GetAllOrdersAsync();
     }
 }
